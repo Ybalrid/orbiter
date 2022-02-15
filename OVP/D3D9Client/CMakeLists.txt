@@ -1,5 +1,6 @@
-
+option(ORBITER_DX9_ENABLE_DX11_BRIDGE ON)
 configure_file(D3D9ClientConfig.h.in D3D9ClientConfig.h)
+configure_file(D3D11Config.h.in D3D11Config.h)
 
 # specify the C++ standard
 # set(CMAKE_CXX_STANDARD 11)
@@ -145,6 +146,7 @@ set(IncludeFiles
 	ZTreeMgr.h
 	gcConst.h
 	gcCore.h
+    ${CMAKE_CURRENT_BINARY_DIR}/D3D11Config.h
 )
 
 set(APIHeaders
@@ -198,20 +200,24 @@ add_dependencies(D3D9Client
 
 target_include_directories(D3D9Client PUBLIC
 	${ORBITER_SOURCE_SDK_INCLUDE_DIR}
-	${DXSDK_DIR}/Include
+#	${DXSDK_DIR}/Include
+	"${CMAKE_SOURCE_DIR}/Extern/d3dx"
 )
+
+message(STATUS "${CMAKE_SOURCE_DIR}/Extern/d3dx")
 
 target_link_directories(D3D9Client PUBLIC
 	${ORBITER_SOURCE_SDK_LIB_DIR}
-	${DXSDK_LIB_DIR}
 )
+
 
 target_link_libraries(D3D9Client
 	orbiter.lib
 	orbitersdk.lib
 	d3d9.lib
-	debug d3dx9d.lib
-	optimized d3dx9.lib
+	debug
+	${DXSDK_LIB_DIR}/d3dx9d.lib
+	optimized ${DXSDK_LIB_DIR}/d3dx9.lib
 	kernel32.lib
 	user32.lib
 	gdi32.lib
@@ -227,6 +233,13 @@ target_link_libraries(D3D9Client
 	version.lib
 	msimg32.lib
 )
+
+if(ORBITER_DX9_ENABLE_DX11_BRIDGE)
+target_link_libraries(D3D9Client
+    d3d11.lib
+    dxgi.lib
+    )
+endif()
 
 set_target_properties(D3D9Client
 	PROPERTIES
@@ -245,7 +258,7 @@ add_custom_command(
 )
 
 install(TARGETS D3D9Client
-	LIBRARY	
+	LIBRARY
 	DESTINATION ${ORBITER_INSTALL_PLUGIN_DIR}
 )
 
@@ -253,6 +266,8 @@ add_subdirectory(samples/DrawOrbits)
 add_subdirectory(samples/DX9ExtMFD)
 add_subdirectory(samples/GenericCamera)
 add_subdirectory(samples/TerrainToolBox)
+
+message(STATUS ${ORBITER_INSTALL_ROOT_DIR})
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Meshes/ DESTINATION ${ORBITER_INSTALL_ROOT_DIR}/Meshes)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Config/ DESTINATION ${ORBITER_INSTALL_ROOT_DIR}/Config)

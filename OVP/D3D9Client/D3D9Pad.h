@@ -9,7 +9,7 @@
 #include "OrbiterAPI.h"
 #include "D3D9Client.h"
 #include <d3d9.h>
-#include <d3dx9.h>
+#include "d3dx9.h"
 #include <memory>
 #include <stack>
 #include "DrawAPI.h"
@@ -532,7 +532,7 @@ public:
 	void FillTetragon(DWORD c, const FVECTOR2 pt[4]);
 	void Clear(DWORD color = 0, bool bColor = true, bool bDepth = true);
 	void SetClipDistance(float _near, float _far);
-	
+
 
 	// ===============================================================================
 	// D3D9Client Privates
@@ -560,7 +560,7 @@ public:
 
 	void CopyRectNative(LPDIRECT3DTEXTURE9 pSrc, const LPRECT s, int tx, int ty);
 	void StretchRectNative(LPDIRECT3DTEXTURE9 pSrc, const LPRECT s, const LPRECT t);
-	
+
 
 private:
 

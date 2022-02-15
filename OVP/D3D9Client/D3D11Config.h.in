@@ -1,0 +1,2 @@
+#pragma once
+#cmakedefine ORBITER_DX9_ENABLE_DX11_BRIDGE

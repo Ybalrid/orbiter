@@ -20,6 +20,10 @@
 #include "Log.h"
 #include "D3D9Config.h"
 #include "OapiExtension.h"
+//#include "D3D11Config.h"
+
+#include "d3d11.h"
+#include "dxgi.h"
 
 using namespace oapi;
 
@@ -48,13 +52,32 @@ CD3DFramework9::CD3DFramework9()
 
 	// Create the Direct3D9 ---------------------------------------------
 	//
-	pD3D = Direct3DCreate9(D3D_SDK_VERSION);
 
-	if (pD3D==NULL) {
+	IDirect3D9Ex* pD3D9Ex = nullptr;
+	if(SUCCEEDED(Direct3DCreate9Ex(D3D_SDK_VERSION, &pD3D9Ex)))
+	{
+		const auto status = pD3D9Ex->QueryInterface(__uuidof(IDirect3D9),(void**)&pD3D);
+		pD3D9Ex->Release(); //dec refcont, act as regular D3D9
+		if(FAILED(status))
+		{
+			goto fallback;
+		}
+
+	}
+	else
+	{
+		fallback:
+		LogWrn("Attempted to Initialize DirectX9Ex, and failed... Falling back");
+		pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+	}
+
+	if (pD3D == NULL)
+	{
 		LogErr("ERROR: [Direct3D9 Creation Failed]");
 		LogErr(d3dmessage);
-		MessageBoxA(NULL, d3dmessage, "D3D9Client Initialization Failed",MB_OK);
+		MessageBoxA(NULL, d3dmessage, "D3D9Client Initialization Failed", MB_OK);
 	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -96,7 +119,7 @@ void CD3DFramework9::Clear()
 	pRenderTarget	  = NULL;
 	pBackBuffer		  = NULL;
 	pDepthStencil	  = NULL;
-	
+
 	memset((void *)&rcScreenRect, 0, sizeof(RECT));
 	memset((void *)&d3dPP, 0, sizeof(D3DPRESENT_PARAMETERS));
 	memset((void *)&caps, 0, sizeof(D3DCAPS9));
@@ -274,7 +297,7 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 	LogOapi("MiscCaps................ : 0x%X", caps.PrimitiveMiscCaps);
 	LogAlw("DevCaps................. : 0x%X",caps.DevCaps);
 	LogAlw("DevCaps2................ : 0x%X",caps.DevCaps2);
-	
+
 
 	// Check non power of two texture support
 	if ((caps.PrimitiveMiscCaps&D3DPMISCCAPS_COLORWRITEENABLE)==0) {
@@ -297,11 +320,11 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 		bFail=true;
 	}
 
-	
+
 
 	// Do Some Additional Hardware Checks ===================================================================
-	
-	
+
+
 	// Check vertex texture support
 	//
 	if (pD3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_QUERY_VERTEXTEXTURE, D3DRTYPE_CUBETEXTURE, D3DFMT_A32B32G32R32F)==S_OK) {
@@ -333,24 +356,24 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 	bool bFloat16BB = true;
 	if (pD3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_RENDERTARGET, D3DRTYPE_TEXTURE, D3DFMT_A16B16G16R16F)!=S_OK) bFloat16BB = false;
 	if (pD3D->CheckDepthStencilMatch(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DFMT_A16B16G16R16F, D3DFMT_D24X8)!=S_OK) bFloat16BB = false;
-				  
+
 	if (bFloat16BB) LogOapi("D3DFMT_A16B16G16R16F.... : Yes");
 	else		    LogOapi("D3DFMT_A16B16G16R16F.... : No");
 
 	bool bFloat32BB = true;
 	if (pD3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_RENDERTARGET, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F)!=S_OK) bFloat32BB = false;
-			  
+
 	if (bFloat32BB) LogOapi("D3DFMT_A32B32G32R32F.... : Yes");
 	else		    LogOapi("D3DFMT_A32B32G32R32F.... : No");
 
 	HRESULT D32F = pD3D->CheckDeviceFormat(Adapter, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_SURFACE, D3DFMT_D32F_LOCKABLE);
 
-	if (D32F==S_OK) LogOapi("D3DFMT_D32F_LOCKABLE.... : Yes"); 
+	if (D32F==S_OK) LogOapi("D3DFMT_D32F_LOCKABLE.... : Yes");
 	else		    LogOapi("D3DFMT_D32F_LOCKABLE.... : No");
 
 	HRESULT AR10 = pD3D->CheckDeviceFormat(Adapter, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_RENDERTARGET, D3DRTYPE_TEXTURE, D3DFMT_A2R10G10B10);
 
-	if (AR10==S_OK) LogOapi("D3DFMT_A2R10G10B10...... : Yes"); 
+	if (AR10==S_OK) LogOapi("D3DFMT_A2R10G10B10...... : Yes");
 	else		    LogOapi("D3DFMT_A2R10G10B10...... : No");
 
 	HRESULT L8 = pD3D->CheckDeviceFormat(Adapter, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, D3DUSAGE_RENDERTARGET, D3DRTYPE_TEXTURE, D3DFMT_L8);
@@ -359,7 +382,7 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 	if (L8 == S_OK) LogOapi("D3DFMT_L8............... : Yes");
 	else		    LogOapi("D3DFMT_L8............... : No");
 
-	
+
 
 	if (caps.DeclTypes&D3DDTCAPS_DEC3N) LogOapi("D3DDTCAPS_DEC3N......... : Yes");
 	else								LogOapi("D3DDTCAPS_DEC3N......... : No");
@@ -407,6 +430,107 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 	if (FAILED(hr)) {
 		LogErr("[Device Initialization Failed]");
 		return hr;
+	}
+
+	IDirect3DDevice9Ex* pDevice9Ex = nullptr;
+	const auto isExCompat = pDevice->QueryInterface(__uuidof(IDirect3DDevice9Ex), (void**)& pDevice9Ex);
+
+	std::vector<LUID> dx9Luids;
+
+	if (SUCCEEDED(isExCompat)) //Should always work on Windows Vista and newer
+	{
+		IDirect3D9Ex* pD3D9Ex = nullptr;
+		pD3D->QueryInterface(__uuidof(IDirect3D9Ex), (void**)&pD3D9Ex);
+		LogOapi("This DirectX Device 9 is compatible with DirectX9Ex API...");
+		LogOapi("Probing adapters");
+		const auto nbAdapters = pD3D9Ex->GetAdapterCount();
+		LogOapi("Found %u adapters :", nbAdapters);
+
+		for(UINT adapterOrd = 0; adapterOrd < nbAdapters; ++adapterOrd)
+		{
+			LUID luid;
+			unsigned char* luidArray = (unsigned char*)&luid;
+			D3DADAPTER_IDENTIFIER9 identifier;
+			pD3D9Ex->GetAdapterIdentifier(adapterOrd, 0, &identifier);
+			pD3D9Ex->GetAdapterLUID(adapterOrd, &luid);
+
+			LogOapi("Description : %s", identifier.Description);
+			LogOapi("LUID        : %2x%2x%2x%2x%2x%2x%2x",
+				luidArray[0],
+				luidArray[1],
+				luidArray[2],
+				luidArray[3],
+				luidArray[4],
+				luidArray[5],
+				luidArray[6],
+				luidArray[7]);
+
+			dx9Luids.push_back(luid);
+		}
+
+		{
+			IDXGIFactory* pFactory = nullptr;
+			CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
+
+			struct dx11Adapter
+			{
+				LUID luid;
+				IDXGIAdapter* pAdapter;
+			};
+
+			std::vector<dx11Adapter> dx11Adapters;
+
+			IDXGIAdapter* pAdapter = nullptr;
+			for(UINT i = 0; pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND; ++i)
+			{
+				DXGI_ADAPTER_DESC desc;
+				pAdapter->GetDesc(&desc);
+
+				dx11Adapters.push_back({ desc.AdapterLuid, pAdapter });
+			}
+			pFactory->Release();
+			pAdapter = nullptr;
+
+			for(auto& adapter : dx11Adapters)
+				for(auto& dx9luid : dx9Luids)
+					if(0 == std::memcmp(&adapter.luid, &dx9luid, sizeof(LUID)))
+					{
+						pAdapter = adapter.pAdapter;
+						goto realbreak;
+					}
+		realbreak:
+			if(pAdapter)
+			{
+				LogOapi("Found common adapter between DX9 and DX11");
+
+				ID3D11Device* pDx11Device = nullptr;
+				ID3D11DeviceContext* pDx11DeviceContext = nullptr;
+
+				std::vector<D3D_FEATURE_LEVEL> dxLevels{ D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
+				D3D_FEATURE_LEVEL enabledLevel;
+				const auto dx11Init = D3D11CreateDevice(pAdapter,
+						D3D_DRIVER_TYPE_UNKNOWN,
+						nullptr,
+						0,
+						dxLevels.data(),
+						dxLevels.size(),
+					D3D11_SDK_VERSION,
+						&pDx11Device,
+						&enabledLevel,
+						&pDx11DeviceContext);
+
+				if(SUCCEEDED(dx11Init))
+				{
+					//jackpot!
+					MessageBoxA(hWnd, "This is working", "DX11 and DX9", MB_OK);
+				}
+
+
+			}
+		}
+
+		//We don't need this interface right now
+		pD3D9Ex->Release();
 	}
 
 	LogOapi("Available Texture Memory : %u MB", pDevice->GetAvailableTextureMem() >> 20);
@@ -511,6 +635,26 @@ HRESULT CD3DFramework9::CreateFullscreenMode()
 
 	if (DDM)	devBehaviorFlags |= D3DCREATE_DISABLE_DRIVER_MANAGEMENT;
 
+	IDirect3D9Ex* pD3D9Ex;
+	IDirect3DDevice9Ex* pDevice9Ex;
+	if (SUCCEEDED(pD3D->QueryInterface(__uuidof(IDirect3D9Ex), (void**)&pD3D9Ex)))
+	{
+		pD3D9Ex->CreateDeviceEx(Adapter,
+			D3DDEVTYPE_HAL,
+			hWnd,
+			devBehaviorFlags | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
+			&d3dPP,
+			nullptr,
+			&pDevice9Ex
+		);
+
+		const auto status = pDevice9Ex->QueryInterface(__uuidof(IDirect3DDevice9), (void**) & pDevice);
+		pDevice9Ex->Release();
+		if (FAILED(status))
+			pDevice = nullptr;
+	}
+
+	if(!pDevice)
 	HR(pD3D->CreateDevice(
 		Adapter,			// primary adapter
 		D3DDEVTYPE_HAL,		// device type
@@ -542,7 +686,7 @@ HRESULT CD3DFramework9::CreateWindowedMode()
 
 	// Get the dimensions of the viewport and screen bounds
 	GetClientRect(hWnd, &rcScreenRect);
-	
+
 	// What is this ?!!
 	//ClientToScreen(hWnd, (POINT*)&rcScreenRect.left);
 	//ClientToScreen(hWnd, (POINT*)&rcScreenRect.right);
@@ -606,6 +750,26 @@ HRESULT CD3DFramework9::CreateWindowedMode()
 
 		LogErr("[WARNING] NVPerfHUD mode is Active (Disable from D3D9Client.cfg) [WARNING]");
 
+		IDirect3D9Ex* pD3D9Ex;
+		IDirect3DDevice9Ex* pDevice9Ex;
+		if (SUCCEEDED(pD3D->QueryInterface(__uuidof(IDirect3D9Ex), (void**)&pD3D9Ex)))
+		{
+			pD3D9Ex->CreateDeviceEx(Adapter,
+				D3DDEVTYPE_HAL,
+				hWnd,
+				devBehaviorFlags | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
+				&d3dPP,
+				nullptr,
+				&pDevice9Ex
+			);
+
+			const auto status = pDevice9Ex->QueryInterface(__uuidof(IDirect3DDevice9), (void**)&pDevice);
+			pDevice9Ex->Release();
+			if (FAILED(status))
+				pDevice = nullptr;
+		}
+
+		if (!pDevice)
 		hr = pD3D->CreateDevice(
 			Adapter,				// primary adapter
 			D3DDEVTYPE_REF,			// device type
@@ -616,6 +780,26 @@ HRESULT CD3DFramework9::CreateWindowedMode()
 	}
 	else {
 
+		IDirect3D9Ex* pD3D9Ex = nullptr;
+		IDirect3DDevice9Ex* pDevice9Ex = nullptr;
+		if (SUCCEEDED(pD3D->QueryInterface(__uuidof(IDirect3D9Ex), (void**)&pD3D9Ex)))
+		{
+			pD3D9Ex->CreateDeviceEx(Adapter,
+				D3DDEVTYPE_HAL,
+				hWnd,
+				devBehaviorFlags | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
+				&d3dPP,
+				nullptr,
+				&pDevice9Ex
+			);
+
+			const auto status = pDevice9Ex->QueryInterface(__uuidof(IDirect3DDevice9), (void**)&pDevice);
+			pDevice9Ex->Release();
+			if (FAILED(status))
+				pDevice = nullptr;
+		}
+
+		if (!pDevice)
 		hr = pD3D->CreateDevice(
 			Adapter,				// primary adapter
 			D3DDEVTYPE_HAL,			// device type

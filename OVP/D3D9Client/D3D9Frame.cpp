@@ -25,6 +25,8 @@
 #include "d3d11.h"
 #include "dxgi.h"
 
+#include "VR.h"
+
 using namespace oapi;
 
 IDirect3DVertexDeclaration9	*pMeshVertexDecl = NULL;
@@ -522,7 +524,10 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 				if(SUCCEEDED(dx11Init))
 				{
 					//jackpot!
-					MessageBoxA(hWnd, "This is working", "DX11 and DX9", MB_OK);
+					//MessageBoxA(hWnd, "This is working", "DX11 and DX9", MB_OK);
+
+					pDevice->QueryInterface(__uuidof(IDirect3DDevice9Ex), (void**)& pDevice9Ex);
+					pVR = new VR(pDx11Device, pDx11DeviceContext, pDevice9Ex);
 				}
 
 
@@ -530,7 +535,7 @@ HRESULT CD3DFramework9::Initialize(HWND _hWnd, GraphicsClient::VIDEODATA *vData)
 		}
 
 		//We don't need this interface right now
-		pD3D9Ex->Release();
+		//pD3D9Ex->Release();
 	}
 
 	LogOapi("Available Texture Memory : %u MB", pDevice->GetAvailableTextureMem() >> 20);

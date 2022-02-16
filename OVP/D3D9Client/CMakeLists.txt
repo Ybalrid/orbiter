@@ -9,6 +9,8 @@ configure_file(D3D11Config.h.in D3D11Config.h)
 # set the project name and version
 project(D3D9Client VERSION 31.0)
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/Extern/OpenXR-SDK-release-1.0.22 OpenXR-SDK)
+
 # Check build platform
 if(CMAKE_SIZEOF_VOID_P EQUAL 8) # 64-bit build?
 	set(BUILD64 1)
@@ -93,6 +95,7 @@ set(SourceFiles
 	WindowMgr.cpp
 	ZTreeMgr.cpp
 	Tilemgr2_imp.hpp
+    VR.cpp
 )
 
 set(IncludeFiles
@@ -147,6 +150,7 @@ set(IncludeFiles
 	gcConst.h
 	gcCore.h
     ${CMAKE_CURRENT_BINARY_DIR}/D3D11Config.h
+    VR.h
 )
 
 set(APIHeaders
@@ -238,6 +242,7 @@ if(ORBITER_DX9_ENABLE_DX11_BRIDGE)
 target_link_libraries(D3D9Client
     d3d11.lib
     dxgi.lib
+    openxr_loader
     )
 endif()
 

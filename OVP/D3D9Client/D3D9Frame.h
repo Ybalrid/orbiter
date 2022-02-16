@@ -30,6 +30,8 @@
 #include "Orbitersdk.h"
 #include "D3D9Client.h"
 
+#include "VR.h"
+
 class SurfNative;
 
 //-----------------------------------------------------------------------------
@@ -74,6 +76,8 @@ private:
 	D3DCAPS9               caps;
     RECT                   rcScreenRect;       // Screen rect for window
 
+
+	VR* pVR;
     // Internal functions for the framework class
 
     HRESULT CreateFullscreenMode();
